@@ -77,8 +77,7 @@ function getScoreData(rawHtml: string) {
   return result;
 }
 
-async function checkLastUpdateDate(key: string) {
-  const lastUpdate = await KVStore.get(`${key}-updated-at`);
+function checkDataUpdateStatus(lastUpdate: string | null) {
   if (!lastUpdate) {
     return false;
   }
@@ -92,15 +91,15 @@ async function checkLastUpdateDate(key: string) {
 
 async function handleRequest(request: Request) {
   const searchParams = new URL(request.url).searchParams;
-  const forceUpdate = searchParams.get('forceupdate');
+  const forceUpdate = searchParams.get('force');
+  const lastUpdate = await KVStore.get(`${DATA_KEY}-updated`);
+  const isUpToDate = checkDataUpdateStatus(lastUpdate);
 
-  const useKVStore = checkLastUpdateDate(DATA_KEY);
-
-  if (!forceUpdate && useKVStore) {
+  if (!forceUpdate && isUpToDate) {
     const data = await KVStore.get(DATA_KEY);
     if (data) {
       const parsedData = JSON.parse(data);
-      return JSONResponse(parsedData);
+      return JSONResponse({ data: parsedData, savedData: true, updatedAt: lastUpdate });
     }
   }
 
@@ -122,9 +121,10 @@ async function handleRequest(request: Request) {
   const scoreData = getScoreData(rawHtml);
 
   await KVStore.put(DATA_KEY, JSON.stringify(scoreData));
-  await KVStore.put(`${DATA_KEY}-updated`, new Date().getTime().toString());
+  const now = new Date().getTime().toString();
+  await KVStore.put(`${DATA_KEY}-updated`, now);
 
-  return JSONResponse(scoreData);
+  return JSONResponse({ data: scoreData, savedData: false, updatedAt: now });
 }
 
 addEventListener('fetch', (event) => {
