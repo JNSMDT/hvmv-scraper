@@ -79,14 +79,12 @@ function getScoreData(rawHtml: string) {
 
 function checkDataUpdateStatus(lastUpdate: string | null) {
   if (!lastUpdate) {
-    return false;
+    return null;
   }
   const updatedAt = Number(lastUpdate);
   const now = new Date().getTime();
 
-  if (now - updatedAt > 3600) return true;
-
-  return false;
+  return now - updatedAt < 3600 * 1000;
 }
 
 async function handleRequest(request: Request) {
