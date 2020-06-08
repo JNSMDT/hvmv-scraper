@@ -68,15 +68,15 @@ function getScoreData(rawHtml: string) {
   const headRow = dataArray.splice(0, 9);
   const teamCount = dataArray.length / headRow.length;
 
-  const result = [];
+  const teamData = [];
   for (let i = 0; i < teamCount; i += 1) {
     const entry: { [key: string]: string } = {};
     headRow.forEach((headName, index) => {
       entry[headName] = dataArray[i * teamCount + index];
     });
-    result.push(entry);
+    teamData.push(entry);
   }
-  return result;
+  return { headRow, teamData };
 }
 
 function checkDataUpdateStatus(lastUpdate: string | null) {
@@ -97,9 +97,10 @@ async function handleRequest(request: Request) {
 
   if (!forceUpdate && isUpToDate) {
     const data = await KVStore.get(DATA_KEY);
+    const headRow = await KVStore.get(`${DATA_KEY}-headrow`);
     if (data) {
       const parsedData = JSON.parse(data);
-      return JSONResponse({ data: parsedData, savedData: true, updatedAt: lastUpdate });
+      return JSONResponse({ data: parsedData, headRow, updatedAt: lastUpdate });
     }
   }
 
@@ -118,13 +119,14 @@ async function handleRequest(request: Request) {
     return ErrorJSONResponse('Url not found');
   }
   const rawHtml = await fetch(url).then((res) => res.text());
-  const scoreData = getScoreData(rawHtml);
+  const { headRow, teamData } = getScoreData(rawHtml);
 
-  await KVStore.put(DATA_KEY, JSON.stringify(scoreData));
+  await KVStore.put(DATA_KEY, JSON.stringify(teamData));
+  await KVStore.put(`${DATA_KEY}-headrow`, JSON.stringify(headRow));
   const now = new Date().getTime().toString();
   await KVStore.put(`${DATA_KEY}-updated`, now);
 
-  return JSONResponse({ data: scoreData, savedData: false, updatedAt: now });
+  return JSONResponse({ data: teamData, headRow, updatedAt: now });
 }
 
 addEventListener('fetch', (event) => {
