@@ -45,9 +45,11 @@ function getScoreData(rawHtml: string) {
     .filter((rawHtmlLine) => rawHtmlLine !== '');
 
   let isTable = false;
+  let firstTableFound = false;
   const tableRawHtml = cleanedRawHtmlArr.filter((rawHtmlLine) => {
-    if (rawHtmlLine.includes('<table')) {
+    if (rawHtmlLine.includes('<table') && !firstTableFound) {
       isTable = true;
+      firstTableFound = true;
     }
     if (rawHtmlLine.includes('</table>')) {
       isTable = false;
