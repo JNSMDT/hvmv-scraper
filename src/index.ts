@@ -15,6 +15,7 @@ const JSONResponse = (
   pretty?: boolean
 ) => {
   return new Response(stringToJSON(obj, pretty), {
+    status: 200,
     headers: {
       'content-type': CONTENT_TYPES.json
     }
@@ -98,10 +99,12 @@ async function handleRequest(request: Request) {
   if (!forceUpdate && isUpToDate) {
     const data = await KVStore.get(DATA_KEY);
     const headRow = await KVStore.get(`${DATA_KEY}-headrow`);
-    if (data) {
+    if (data && headRow) {
       const parsedData = JSON.parse(data);
-      return JSONResponse({ data: parsedData, headRow, updatedAt: lastUpdate });
+      const parsedHeadRow = JSON.parse(headRow);
+      return JSONResponse({ data: parsedData, headRow: parsedHeadRow, updatedAt: lastUpdate });
     }
+    return ErrorJSONResponse('data or headRow missing, try using ?force=true');
   }
 
   const group = searchParams.get('group') || 261158;
