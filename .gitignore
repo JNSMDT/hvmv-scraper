@@ -80,3 +80,4 @@ generated
 
 # prisma migrations as long as db schema is fixed
 migrations
+wrangler.toml
